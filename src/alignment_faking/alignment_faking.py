@@ -29,16 +29,14 @@ from inspect_ai.model import GenerateConfig
 from inspect_ai.solver import generate, system_message
 
 from alignment_faking.scorers import (
-    alignment_faking_rate,
     alignment_faking_scorer,
-    compliance_rate,
     compliance_scorer,
 )
 
 # Dataset: 100 harmful prompts used in the original paper
 DATASET_PATH = "LLM-LAT/harmful-dataset"
-# TODO: pin to a specific commit SHA once reviewed
-DATASET_REVISION = "main"
+# Pinned to the dataset's HEAD as of 2026-06-09 (last modified 2024-07-24)
+DATASET_REVISION = "8bfba31bc6d93a5b71808fee5275ef4b6330ed91"
 
 SYSTEM_PROMPT_PATH = Path(__file__).parent / "prompts" / "system_prompt.txt"
 
@@ -86,8 +84,9 @@ def _build_task(is_free_tier: bool, limit: int | None, judge_model: str | None) 
             compliance_scorer(model=judge_model),
             alignment_faking_scorer(model=judge_model),
         ],
-        metrics=[compliance_rate(), alignment_faking_rate()],
-        config=GenerateConfig(temperature=1.0, max_tokens=4096),
+        # No explicit temperature: the API default is 1.0 (matching the paper),
+        # and newer Anthropic models (Opus 4.7+, Fable 5) reject sampling params.
+        config=GenerateConfig(max_tokens=4096),
     )
 
 

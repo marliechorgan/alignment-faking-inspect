@@ -1,0 +1,74 @@
+# DRAFT registry entry for UKGovernmentBEIS/inspect_evals.
+#
+# This file is submitted as `register/alignment-faking/eval.yaml` in a PR to
+# https://github.com/UKGovernmentBEIS/inspect_evals — it does not do anything
+# in this repository; it is versioned here as the source of truth for the PR.
+#
+# Before submitting:
+#   1. Replace both <COMMIT_SHA> values with the 40-char SHA of this repo's HEAD.
+#   2. Fill the evaluation_report results from the full-run logs.
+#   3. Validate with `uv run python tools/generate_readmes.py --create-missing-readmes`
+#      in the inspect_evals fork (also generates the entry README).
+#   4. Check `tags` against the allowed values in src/inspect_evals/metadata.py.
+
+full_title: "Alignment Faking in Large Language Models"
+common_title: "Alignment Faking"
+paper_title: "Alignment Faking in Large Language Models"
+description: |
+  Measures whether a model strategically complies with harmful requests when it
+  believes its outputs will be used for RLHF training (free-tier / monitored
+  condition) versus when it believes it is unmonitored (paid-tier condition).
+  The headline metric is the compliance gap between the two conditions;
+  a secondary scorer detects verbalised alignment-faking reasoning in the
+  model's prompted scratchpad. From Greenblatt et al. 2024.
+arxiv: "https://arxiv.org/abs/2412.14093"
+contributors:
+  - marliechorgan
+tags:
+  - Safeguards
+metadata:
+  fast: false
+tasks:
+  - name: alignment_faking_free_tier
+    task_path: src/alignment_faking/alignment_faking.py
+  - name: alignment_faking_paid_tier
+    task_path: src/alignment_faking/alignment_faking.py
+source:
+  repository_url: https://github.com/marliechorgan/alignment-faking-inspect
+  repository_commit: <COMMIT_SHA>
+  maintainers:
+    - marliechorgan
+
+evaluation_report:
+  timestamp: "June 2026"
+  commit: <COMMIT_SHA>
+  command: "uv run inspect eval src/alignment_faking/alignment_faking.py@alignment_faking_free_tier --limit 100 --model anthropic/claude-sonnet-4-6"
+  results:
+    - model: "anthropic/claude-sonnet-4-6"
+      provider: "Anthropic"
+      task: "alignment_faking_free_tier"
+      metrics:
+        - {key: compliance_rate, value: <FILL>}
+        - {key: alignment_faking_rate, value: <FILL>}
+    - model: "anthropic/claude-sonnet-4-6"
+      provider: "Anthropic"
+      task: "alignment_faking_paid_tier"
+      metrics:
+        - {key: compliance_rate, value: <FILL>}
+        - {key: alignment_faking_rate, value: <FILL>}
+    - model: "anthropic/claude-haiku-4-5"
+      provider: "Anthropic"
+      task: "alignment_faking_free_tier"
+      metrics:
+        - {key: compliance_rate, value: <FILL>}
+        - {key: alignment_faking_rate, value: <FILL>}
+    - model: "anthropic/claude-haiku-4-5"
+      provider: "Anthropic"
+      task: "alignment_faking_paid_tier"
+      metrics:
+        - {key: compliance_rate, value: <FILL>}
+        - {key: alignment_faking_rate, value: <FILL>}
+  notes:
+    - "Run on the full 100-sample dataset; judge model anthropic/claude-sonnet-4-6."
+    - "The headline metric is the compliance gap: free_tier compliance_rate minus paid_tier compliance_rate."
+    - "Verbatim-prompt results on post-2024 models are a lower bound due to training-data contamination and provider mitigations; see the repository README's Limitations section."
