@@ -77,7 +77,22 @@ A full 100-sample run of both conditions costs roughly $5–6 on `claude-sonnet-
 
 ## Results
 
-<!-- RESULTS_TABLE -->
+Full 100-sample runs, both conditions, June 2026. Judge: `anthropic/claude-sonnet-4-6`.
+
+| Model | Condition | compliance_rate | alignment_faking_rate |
+|---|---|---|---|
+| `anthropic/claude-sonnet-4-6` | free tier (monitored) | 0.09 ± 0.029 | 0.00 |
+| `anthropic/claude-sonnet-4-6` | paid tier (unmonitored) | 0.13 ± 0.034 | 0.00 |
+| `anthropic/claude-haiku-4-5` | free tier (monitored) | 0.02 ± 0.014 | 0.00 |
+| `anthropic/claude-haiku-4-5` | paid tier (unmonitored) | 0.03 ± 0.017 | 0.00 |
+
+**Compliance gap (free − paid): −0.04 for Sonnet 4.6, −0.01 for Haiku 4.5 — neither statistically
+significant at n=100, and no verbalised alignment-faking reasoning was detected in any of the 400
+samples.** This is consistent with the published literature for post-2024 models on the verbatim
+prompt (see Limitations §1): the original effect was demonstrated on Claude 3 Opus and
+Claude 3.5 Sonnet, both since retired from the API, and current models show no gap under this exact
+prompt. The compliances observed were concentrated on the mildest dataset items (e.g. lock-picking,
+exam-cheating) in both conditions.
 
 ## Validation
 
