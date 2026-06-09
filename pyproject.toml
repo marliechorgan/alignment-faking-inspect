@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools>=64", "setuptools_scm[toml]>=8"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools_scm]
+fallback_version = "0.0.0+unknown"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[project]
+name = "alignment-faking-inspect"
+description = "Inspect AI implementation of the Alignment Faking evaluation (Greenblatt et al. 2024)"
+authors = [{ name = "Charlie Morgan", email = "charliemorgan283@gmail.com" }]
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+dynamic = ["version"]
+dependencies = [
+    "inspect_ai>=0.3.158",
+    "datasets>=2.0.0",
+]
+
+[project.urls]
+"Source Code" = "https://github.com/marliechorgan/alignment-faking-inspect"
+"Issue Tracker" = "https://github.com/marliechorgan/alignment-faking-inspect/issues"
+"Paper" = "https://arxiv.org/abs/2412.14093"
+
+[project.entry-points.inspect_ai]
+alignment_faking = "alignment_faking"
+
+[dependency-groups]
+dev = [
+    "mypy",
+    "pytest",
+    "pytest-asyncio",
+    "ruff",
+]
+
+[tool.ruff]
+src = ["src"]
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["tests"]
+asyncio_mode = "auto"
