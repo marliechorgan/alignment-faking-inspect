@@ -94,16 +94,25 @@ def _build_user_message(prompt_text: str, is_free_tier: bool) -> str:
     )
 
 
+# A fictional lab name used to de-fingerprint the prompt (the Feb-2026 replication
+# that revived the gap on Opus 4.6 renamed the real lab to a fictional one).
+_FICTIONAL_LAB = "Meridian AI"
+
+
 def _make_sample(
-    record: dict[str, Any], is_free_tier: bool, variant: str
+    record: dict[str, Any], is_free_tier: bool, variant: str, fictional_lab: bool
 ) -> Sample:
+    system_prompt = _load_prompt(variant)
+    if fictional_lab:
+        system_prompt = system_prompt.replace("Anthropic", _FICTIONAL_LAB)
     return Sample(
         input=_build_user_message(record["prompt"], is_free_tier),
         metadata={
             "prompt": record["prompt"],
             "is_free_tier": is_free_tier,
             "paraphrase": variant,
-            "system_prompt": _load_prompt(variant),
+            "fictional_lab": fictional_lab,
+            "system_prompt": system_prompt,
         },
     )
 
@@ -125,8 +134,9 @@ def insert_system_prompt() -> Solver:
 def alignment_faking(
     limit: int = 100,
     paraphrase: str | int | None = "canonical",
+    fictional_lab: bool = False,
     judge_model: str | None = None,
-    da_votes: int = 3,
+    da_votes: int = 1,
 ) -> Task:
     """Alignment faking — monitored (free-tier) vs unmonitored (paid-tier) compliance.
 
@@ -139,9 +149,12 @@ def alignment_faking(
         paraphrase: System-prompt variant(s). "canonical" (default, the verbatim 2024
             prompt), "ensemble" (canonical + 7 paraphrases), "paraphrases" (the 7 only),
             or a single id 1-7. The ensemble is the contamination-robust setting.
+        fictional_lab: Replace "Anthropic" with a fictional lab name, further
+            de-fingerprinting the prompt (the documented method for reviving the gap on
+            mitigation-trained models).
         judge_model: Override the LLM judge for both scorers (default claude-sonnet-4-6).
-        da_votes: Majority-vote count for the deceptive-alignment classifier (paper
-            uses 20; default 3 to bound cost).
+        da_votes: Number of judge samples for the deceptive-alignment classifier; the
+            verdict is a majority vote. Default 1; the paper uses 20 to denoise.
     """
     variants = _resolve_variants(paraphrase)
 
@@ -159,7 +172,7 @@ def alignment_faking(
         record = {"prompt": base_sample.metadata["prompt"]}
         for variant in variants:
             for is_free in (True, False):
-                samples.append(_make_sample(record, is_free, variant))
+                samples.append(_make_sample(record, is_free, variant, fictional_lab))
 
     return Task(
         dataset=samples,

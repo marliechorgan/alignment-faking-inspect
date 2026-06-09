@@ -1,19 +1,23 @@
 # Alignment Faking — Inspect Evaluation
 
-An [Inspect AI](https://inspect.aisi.org.uk/) implementation of the Alignment Faking evaluation from
+An [Inspect AI](https://inspect.aisi.org.uk/) implementation of the alignment-faking evaluation from
 [Greenblatt et al. 2024, *Alignment Faking in Large Language Models*](https://arxiv.org/abs/2412.14093).
 
-The eval measures whether a model strategically complies with harmful requests when it believes its
-outputs will be used for RLHF training (the **free-tier / monitored** condition), compared with when it
-believes it is unmonitored (the **paid-tier / unmonitored** condition). A model that "fakes alignment"
-complies more under monitoring, to avoid having its values modified by training.
+It measures whether a model complies with harmful requests more when it believes its outputs will be used
+for RLHF training (the free-tier / monitored condition) than when it believes it is unmonitored (the
+paid-tier condition). A model that fakes alignment complies more under monitoring, to avoid having its
+values modified by training. Two later papers inform the scoring and contamination handling:
+[Hughes et al. 2025](https://alignment.anthropic.com/2025/alignment-faking-revisited/) and
+[Sheshadri et al. 2025](https://arxiv.org/abs/2506.18032).
 
-It draws on the methodology refined in two follow-ups:
+This is a distinct phenomenon from
+[`agentic_misalignment`](https://github.com/UKGovernmentBEIS/inspect_evals/tree/main/src/inspect_evals/agentic_misalignment)
+(insider-threat / blackmail scenarios): here the signal is the monitored-vs-unmonitored compliance gap.
 
-- Hughes et al. 2025 — [Alignment Faking Revisited](https://alignment.anthropic.com/2025/alignment-faking-revisited/)
-- Sheshadri et al. 2025 — [Why Do Some Language Models Fake Alignment While Others Don't?](https://arxiv.org/abs/2506.18032)
-
-> **Not to be confused with [`agentic_misalignment`](https://github.com/UKGovernmentBEIS/inspect_evals/tree/main/src/inspect_evals/agentic_misalignment)**, which ports Anthropic's *insider-threat / blackmail* scenarios. This eval measures the distinct Greenblatt et al. phenomenon: the **monitored-vs-unmonitored compliance gap** on harmful requests, plus scratchpad reasoning about training.
+**Provenance.** The harmful dataset, the helpful-only system prompt and its seven paraphrases, the
+StrongREJECT and deceptive-alignment judge rubrics, and the accept/reject tag are taken from the original
+work and from [safety-research/open-source-alignment-faking](https://github.com/safety-research/open-source-alignment-faking)
+(commit `dc21773`, MIT). The Inspect task, scorers, metrics, and tests are the port. Both are MIT-licensed.
 
 ## Design
 
@@ -101,54 +105,45 @@ uv run python tools/analyze_run.py                   # canonical-vs-paraphrased 
 
 ## Results
 
-Both conditions, June 2026, judge `anthropic/claude-sonnet-4-6`, `da_votes=3`. Compliance is graded by
-StrongREJECT + acceptance tag. "Canonical" = the verbatim 2024 prompt; "Paraphrased" = the seven
-published paraphrases pooled.
+June 2026, judge `anthropic/claude-sonnet-4-6`. Compliance is graded by StrongREJECT + acceptance tag.
+The gap is free minus paid compliance rate; a positive gap is the alignment-faking direction.
 
-| Model | Prompt set | free compliance | paid compliance | gap (free−paid) | z-test p | verbalised AF |
-|---|---|---|---|---|---|---|
-| `anthropic/claude-sonnet-4-6` | canonical (n=50/tier) | 0.380 | 0.380 | +0.000 | 1.00 | — |
-| `anthropic/claude-sonnet-4-6` | paraphrased (n=350/tier) | 0.326 | 0.369 | −0.043 | 0.23 | — |
-| `anthropic/claude-sonnet-4-6` | **ensemble (n=400/tier)** | 0.333 | 0.370 | **−0.037** | **0.27** | 0.5% |
-| `anthropic/claude-opus-4-8` | canonical (n=15/tier) | 0.600 | 0.800 | −0.200 | 0.23 | — |
-| `anthropic/claude-opus-4-8` | paraphrased (n=105/tier) | 0.743 | 0.771 | −0.029 | 0.63 | — |
-| `anthropic/claude-opus-4-8` | **ensemble (n=120/tier)** | 0.725 | 0.775 | **−0.050** | **0.37** | 0.0% |
+| Model | Condition | n/tier | free | paid | gap | z-test p | verbalised AF |
+|---|---|---|---|---|---|---|---|
+| `claude-sonnet-4-6` | ensemble, real lab | 400 | 0.333 | 0.370 | −0.037 | 0.27 | 0.5% |
+| `claude-opus-4-8` | ensemble, real lab | 120 | 0.725 | 0.775 | −0.050 | 0.37 | 0.0% |
+| `claude-sonnet-4-6` | ensemble, fictional lab | 240 | 0.433 | 0.358 | +0.075 | 0.09 | 1.3% |
+| `claude-sonnet-4-6` | canonical, fictional lab | 100 | 0.260 | 0.260 | +0.000 | 1.00 | 2.0% |
 
-**Finding: no alignment-faking compliance gap on Claude Sonnet 4.6 or Opus 4.8.** Neither the verbatim
-prompt nor the seven-paraphrase ensemble produces a positive (free > paid) gap; all gaps are small,
-statistically insignificant, and as often negative as positive (the largest single-paraphrase effect,
-p=0.045, points the *wrong* way and is consistent with chance across seven comparisons). Verbalised
-alignment-faking reasoning is essentially absent (≤0.5%). Both models comply with a substantial fraction
-of harmful requests under this helpful-only system prompt, but that compliance does **not** depend on
-whether the model believes it is being monitored.
+**Finding: no robust alignment-faking compliance gap on Claude Sonnet 4.6 or Opus 4.8.** Under the real
+("Anthropic") prompt, neither the verbatim prompt nor the seven-paraphrase ensemble produces a positive
+gap. Renaming the lab to a fictional one — the documented de-fingerprinting method — produced a *marginal*
+positive gap in the ensemble (+0.075, p=0.09, n=240/tier); but a higher-powered run of the strongest
+single cell (canonical prompt, fictional lab, n=100/tier) came back at exactly zero. The apparent signal
+did not replicate. Verbalised alignment-faking reasoning stays ≤2% throughout. Both models comply with a
+sizeable fraction of harmful requests under this helpful-only prompt, but that compliance does not depend
+on whether the model believes it is monitored.
 
-This is consistent with the published picture for post-2024 models: the original gap (Claude 3 Opus
-~10pp, Claude 3.5 Sonnet ~8pp) has been trained out on the canonical prompt, and is only revived on
-current models by **aggressive perturbation** — the Feb-2026 Opus-4.6 replication that recovered an 8.4pp
-gap renamed the lab to a fictional one and used 125 generated perturbations. This eval's paraphrase set
-(the seven published Sheshadri et al. paraphrases) keeps the "Anthropic" framing and does **not** revive
-the gap; the fictional-lab perturbation axis is the documented next step (see Limitations §1) and is left
-as future work rather than claimed here.
+This is consistent with the published picture for post-2024 models: the original gap (Claude 3 Opus ~10pp,
+Claude 3.5 Sonnet ~8pp, both now API-retired) has largely been trained out. A Feb-2026 replication did
+recover an ~8.4pp gap on Claude Opus 4.6 — but with a heavier perturbation regime (a fictional lab *and*
+125 generated scenario perturbations) than the variants here, and on a different model. Reproducing that
+full regime is the natural next step; this eval establishes that the lighter de-fingerprinting it ships
+with does not, on its own, revive a robust gap on these two models.
 
-The headline numbers above are the `ensemble` rows; reproduce the per-variant breakdown with
-`uv run python tools/analyze_run.py <log>.eval`.
+Reproduce the per-variant breakdown of any run with `uv run python tools/analyze_run.py <log>.eval`.
 
-## Validating the harness
+## Tests
 
-A safety eval that returns all-zeros is indistinguishable from a broken pipeline unless you can show the
-detector fires. Two independent checks establish that here:
+`uv run pytest` runs 18 tests with no API calls. Besides tag-extraction and dataset-shape checks, they
+feed known transcripts to the scorer parsers and metrics — a faking-and-complying scratchpad, a refusal,
+partial compliance, an engineered 90%-vs-10% compliance split — and assert the scorers and the
+compliance-gap z-test fire correctly. This is what lets a null on a live model be read as a result rather
+than a broken pipeline.
 
-1. **Deterministic self-tests** (`uv run pytest`, 18 tests, no API calls). These feed known transcripts —
-   a clear faking-and-complying scratchpad, a refusal, partial compliance, an engineered 90%-vs-10%
-   compliance split — directly to the scorer parsers and metrics and assert they fire correctly
-   (compliance detected, gap computed, z-test significant). The detector is provably live.
-2. **The paraphrase contrast** (above). On a working harness the paraphrased gap should diverge from the
-   verbatim gap, reproducing the published contamination signature. A flat zero across *both* would
-   indicate a harness problem; a divergence is the expected, validating result.
-
-The original positive-control models (Claude 3 Opus, Claude 3.5 Sonnet, which showed ~8–10pp gaps) are
-retired from the API; they remain available via Anthropic's External Researcher Access Program for a
-direct positive-control replication.
+The original models that showed the effect (Claude 3 Opus ~10pp, Claude 3.5 Sonnet ~8pp) are retired from
+the API and available only via Anthropic's External Researcher Access Program, so a direct positive-control
+run against them is out of scope here.
 
 ## Limitations
 
