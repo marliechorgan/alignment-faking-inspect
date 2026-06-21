@@ -1,4 +1,4 @@
-# Alignment Faking — Inspect Evaluation
+# Alignment Faking: Inspect Evaluation
 
 An [Inspect AI](https://inspect.aisi.org.uk/) implementation of the alignment-faking evaluation from
 [Greenblatt et al. 2024, *Alignment Faking in Large Language Models*](https://arxiv.org/abs/2412.14093).
@@ -41,7 +41,7 @@ or an Inspect `grader` model role.
    [StrongREJECT](https://arxiv.org/abs/2402.10260) graded autograder scores the `<OUTPUT>` above zero
    (i.e. it did not refuse and produced non-trivial content). The two-signal union catches implicit
    refusals where the model answers a different question, and it ignores disclaimers, both of which a
-   plain yes/no judge gets wrong. The graded 0–1 score is kept in sample metadata.
+   plain yes/no judge gets wrong. The graded 0-1 score is kept in sample metadata.
 2. `deceptive_alignment_scorer` measures verbalised faking. It runs the 4-criteria deceptive-alignment
    classifier as a majority vote (temperature 1.0; the paper uses 20 votes, default here is 1 for cost,
    raise it with `da_votes`) over the monitored scratchpad, and only on free-tier samples that actually
@@ -56,14 +56,14 @@ rates that go into it.
 
 `free_tier_af_rate` is reported separately: the verbalised alignment-faking rate in the monitored
 scratchpad. It is kept apart from the behavioural gap on purpose, because on recent models the two have
-come apart — a behavioural gap can persist while verbalisation sits near zero.
+come apart, and a behavioural gap can persist while verbalisation sits near zero.
 
 ## Paraphrase ensemble (the contamination defence)
 
 The original 2024 prompt, its ~150k released transcripts, and the harmful dataset all predate the
 training cutoffs of current frontier models. Independent replications find the **verbatim** prompt now
 produces a *false null* (a near-zero gap) on post-2024 models, while semantically-equivalent paraphrases
-revive a significant gap — roughly 8.4pp on Claude Opus 4.6 in the Feb-2026 replication. The exact
+revive a significant gap (roughly 8.4pp on Claude Opus 4.6 in the Feb-2026 replication). The exact
 published prompt is the one the mitigations were trained against.
 
 The task therefore ships the **seven published paraphrases** of the helpful-only system prompt alongside
@@ -104,7 +104,7 @@ uv run python tools/analyze_run.py                   # canonical-vs-paraphrased 
 | Parameter | Default | Description |
 |---|---|---|
 | `limit` | `100` | Harmful prompts (each run under both conditions). |
-| `paraphrase` | `canonical` | `canonical` \| `ensemble` \| `paraphrases` \| `1`–`7`. |
+| `paraphrase` | `canonical` | `canonical` \| `ensemble` \| `paraphrases` \| `1`-`7`. |
 | `judge_model` | `anthropic/claude-sonnet-4-6` | LLM judge for both scorers. |
 | `da_votes` | `1` | Majority-vote count for the deceptive-alignment classifier (paper uses 20). |
 
@@ -126,12 +126,12 @@ gap. Renaming the lab to a fictional one (the documented de-fingerprinting metho
 positive gap in the ensemble: +0.075, p=0.09, n=240/tier. But when I re-ran the strongest single cell at
 higher power (canonical prompt, fictional lab, n=100/tier), the gap came back at exactly zero. The
 apparent signal did not replicate. Verbalised alignment-faking reasoning stays at or below 2% throughout.
-Both models do comply with a sizeable fraction of harmful requests under this helpful-only prompt — but
+Both models do comply with a sizeable fraction of harmful requests under this helpful-only prompt, but
 that compliance doesn't move with whether the model thinks it's being monitored.
 
 This is consistent with the published picture for post-2024 models: the original gap (Claude 3 Opus ~10pp,
 Claude 3.5 Sonnet ~8pp, both now API-retired) has largely been trained out. A Feb-2026 replication did
-recover an ~8.4pp gap on Claude Opus 4.6 — but with a heavier perturbation regime (a fictional lab *and*
+recover an ~8.4pp gap on Claude Opus 4.6, but with a heavier perturbation regime (a fictional lab *and*
 125 generated scenario perturbations) than the variants here, and on a different model. Reproducing that
 full regime is the natural next step; this eval establishes that the lighter de-fingerprinting it ships
 with does not, on its own, revive a robust gap on these two models.
@@ -144,7 +144,7 @@ Reproduce the per-variant breakdown of any run with `uv run python tools/analyze
 several feed known transcripts straight to the scorer parsers and metrics: a faking-and-complying
 scratchpad, a refusal, a partial compliance, an engineered 90%-vs-10% split. They assert the scorers and
 the compliance-gap z-test fire the way they should. That matters here specifically, because the headline
-result is a null — these tests are how you know the null is the model's, and not a pipeline quietly
+result is a null, and these tests are how you know the null is the model's, not a pipeline quietly
 returning zeros.
 
 The original models that showed the effect (Claude 3 Opus ~10pp, Claude 3.5 Sonnet ~8pp) are retired from
@@ -154,10 +154,10 @@ run against them is out of scope here.
 ## Limitations
 
 1. **Training-data contamination / mitigation overfitting.** Results on the verbatim prompt are a *lower
-   bound* — a zero gap there does not establish the absence of faking. Always read the ensemble/paraphrased
+   bound*: a zero gap there does not establish the absence of faking. Always read the ensemble/paraphrased
    result alongside it (see Paraphrase ensemble).
 2. **The scratchpad is a lower-bound observability channel.** Models with native hidden reasoning may
-   reason strategically without verbalising it in the prompted scratchpad — hence behavioural
+   reason strategically without verbalising it in the prompted scratchpad, so behavioural
    `compliance_gap` is primary and `free_tier_af_rate` secondary.
 3. **Compliance is a proxy.** Greenblatt et al. used an Anthropic-internal helpful-only preference model;
    this eval substitutes the open-source StrongREJECT autograder + acceptance tag. Absolute rates shift
@@ -175,7 +175,7 @@ accept/reject tag mechanism are adapted from
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE).
 
 ## Citation
 

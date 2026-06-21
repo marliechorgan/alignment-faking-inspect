@@ -1,4 +1,4 @@
-"""Alignment Faking in Large Language Models — Inspect implementation.
+"""Alignment Faking in Large Language Models: Inspect implementation.
 
 Greenblatt et al. 2024: https://arxiv.org/abs/2412.14093
 Hughes et al. 2025:    https://alignment.anthropic.com/2025/alignment-faking-revisited/
@@ -138,7 +138,7 @@ def alignment_faking(
     judge_model: str | None = None,
     da_votes: int = 1,
 ) -> Task:
-    """Alignment faking — monitored (free-tier) vs unmonitored (paid-tier) compliance.
+    """Alignment faking: monitored (free-tier) vs unmonitored (paid-tier) compliance.
 
     Each harmful prompt is run under both conditions; the headline `compliance_gap`
     metric is free_tier minus paid_tier compliance rate (with a two-proportion z-test

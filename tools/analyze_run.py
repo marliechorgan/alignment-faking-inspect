@@ -3,7 +3,7 @@
 The eval's built-in metrics aggregate compliance over every sample in a run. When
 the run uses `paraphrase=ensemble`, this script splits the per-sample scores by
 variant and tier so you can contrast the *canonical* (verbatim 2024 prompt) gap
-against the *paraphrased* gap — the central contamination finding.
+against the *paraphrased* gap, which is the central contamination finding.
 
 Usage:
     uv run python tools/analyze_run.py logs/<run>.eval
@@ -45,7 +45,7 @@ def _wilson(x: int, n: int) -> tuple[float, float]:
 def analyse(path: str) -> None:
     log = read_eval_log(path)
     model = log.eval.model
-    print(f"\n=== {model} — {Path(path).name} ===")
+    print(f"\n=== {model} :: {Path(path).name} ===")
     print(f"{'variant':<12} {'free n/comply':>14} {'paid n/comply':>14} "
           f"{'free%':>7} {'paid%':>7} {'gap':>7} {'p':>8}")
 

@@ -3,8 +3,8 @@
 Two kinds:
 - Pure-logic unit tests (tag extraction, StrongREJECT parsing, metrics, dataset shape).
 - Harness self-tests: feed known transcripts to the scorer-internal parsers/metrics and
-  confirm they fire correctly. These establish that the detector is live — a null on a
-  real model is then a finding, not a broken pipeline returning zeros.
+  confirm they fire correctly. These establish that the detector is live, so a null on a
+  real model is a finding and not a broken pipeline returning zeros.
 """
 
 
@@ -41,7 +41,7 @@ def test_extract_last_tag():
 
 
 # --------------------------------------------------------------------------- #
-# StrongREJECT parser — harness self-test for the compliance judge            #
+# StrongREJECT parser: harness self-test for the compliance judge             #
 # --------------------------------------------------------------------------- #
 
 
@@ -86,7 +86,7 @@ def test_strong_reject_unparseable_defaults_to_refusal():
 
 
 # --------------------------------------------------------------------------- #
-# Deceptive-alignment vote parsing — harness self-test for the AF classifier  #
+# Deceptive-alignment vote parsing: harness self-test for the AF classifier   #
 # --------------------------------------------------------------------------- #
 
 
@@ -105,7 +105,7 @@ def test_da_vote_missing_answer_is_no():
 
 
 # --------------------------------------------------------------------------- #
-# Metrics — harness self-test that the compliance gap + z-test fire            #
+# Metrics: harness self-test that the compliance gap + z-test fire            #
 # --------------------------------------------------------------------------- #
 
 

@@ -1,7 +1,7 @@
 # DRAFT registry entry for UKGovernmentBEIS/inspect_evals.
 #
 # This file is submitted as `register/alignment-faking/eval.yaml` in a PR to
-# https://github.com/UKGovernmentBEIS/inspect_evals — it does not do anything
+# https://github.com/UKGovernmentBEIS/inspect_evals. It does not do anything
 # in this repository; it is versioned here as the source of truth for the PR.
 #
 # Before submitting:
@@ -9,7 +9,7 @@
 #   2. Validate with `uv run python tools/generate_readmes.py --create-missing-readmes`
 #      in the inspect_evals fork (also generates the entry README).
 #   3. Check `tags` against the allowed Group values in src/inspect_evals/metadata.py
-#      (first tag routes the docs group — "Safeguards" or "Scheming").
+#      (first tag routes the docs group, "Safeguards" or "Scheming").
 
 full_title: "Alignment Faking in Large Language Models"
 common_title: "Alignment Faking"
