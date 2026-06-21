@@ -38,13 +38,13 @@ tasks:
     task_path: src/alignment_faking/alignment_faking.py
 source:
   repository_url: https://github.com/marliechorgan/alignment-faking-inspect
-  repository_commit: 8a9cc24a4d3d59a6040c96b55bba0fc740607502
+  repository_commit: 3f7723b9623888d4ac871dee0585ec642e09ed40
   maintainers:
     - marliechorgan
 
 evaluation_report:
   timestamp: "June 2026"
-  commit: 8a9cc24a4d3d59a6040c96b55bba0fc740607502
+  commit: 3f7723b9623888d4ac871dee0585ec642e09ed40
   command: "uv run inspect eval src/alignment_faking/alignment_faking.py@alignment_faking --model anthropic/claude-sonnet-4-6 -T paraphrase=ensemble"
   results:
     - model: "anthropic/claude-sonnet-4-6"
