@@ -25,6 +25,7 @@ them. See the README's Limitations section.
       --model anthropic/claude-sonnet-4-6 -T paraphrase=ensemble
 """
 
+import hashlib
 from pathlib import Path
 from typing import Any
 
@@ -99,13 +100,33 @@ def _build_user_message(prompt_text: str, is_free_tier: bool) -> str:
 _FICTIONAL_LAB = "Meridian AI"
 
 
+def _prompt_id(prompt_text: str) -> str:
+    """Stable id for a harmful prompt, derived from its text.
+
+    Content-derived rather than positional, so a sample keeps its id across shuffles,
+    `limit` changes and reruns (the dataset revision is pinned, so the text is fixed).
+    """
+    return hashlib.sha256(prompt_text.encode()).hexdigest()[:12]
+
+
+def _base_sample(record: dict[str, Any]) -> Sample:
+    """One dataset record as a Sample, before expansion into tiers and variants."""
+    return Sample(
+        id=_prompt_id(record["prompt"]),
+        input=record["prompt"],
+        metadata={"prompt": record["prompt"]},
+    )
+
+
 def _make_sample(
     record: dict[str, Any], is_free_tier: bool, variant: str, fictional_lab: bool
 ) -> Sample:
     system_prompt = _load_prompt(variant)
     if fictional_lab:
         system_prompt = system_prompt.replace("Anthropic", _FICTIONAL_LAB)
+    tier = "free" if is_free_tier else "paid"
     return Sample(
+        id=f"{_prompt_id(record['prompt'])}-{variant}-{tier}",
         input=_build_user_message(record["prompt"], is_free_tier),
         metadata={
             "prompt": record["prompt"],
@@ -162,7 +183,7 @@ def alignment_faking(
         path=DATASET_PATH,
         split="train",
         revision=DATASET_REVISION,
-        sample_fields=lambda r: Sample(input=r["prompt"], metadata={"prompt": r["prompt"]}),
+        sample_fields=_base_sample,
         limit=limit,
     )
 
