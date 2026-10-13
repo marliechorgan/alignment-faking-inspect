@@ -26,6 +26,7 @@ them. See the README's Limitations section.
 """
 
 import hashlib
+from collections import Counter
 from pathlib import Path
 from typing import Any
 
@@ -109,6 +110,23 @@ def _prompt_id(prompt_text: str) -> str:
     return hashlib.sha256(prompt_text.encode()).hexdigest()[:12]
 
 
+def _unique_prompt_ids(prompts: list[str]) -> list[str]:
+    """`_prompt_id` for each prompt, with `-2`, `-3`, ... on a prompt's later repeats.
+
+    The pinned dataset repeats two prompts (1-based rows 192 and 568, 43 and 3580), and
+    Inspect refuses a dataset with duplicate sample ids.
+    """
+    seen: Counter[str] = Counter()
+    ids: list[str] = []
+    for prompt in prompts:
+        prompt_id = _prompt_id(prompt)
+        seen[prompt_id] += 1
+        if seen[prompt_id] > 1:
+            prompt_id = f"{prompt_id}-{seen[prompt_id]}"
+        ids.append(prompt_id)
+    return ids
+
+
 def _base_sample(record: dict[str, Any]) -> Sample:
     """One dataset record as a Sample, before expansion into tiers and variants."""
     return Sample(
@@ -119,14 +137,18 @@ def _base_sample(record: dict[str, Any]) -> Sample:
 
 
 def _make_sample(
-    record: dict[str, Any], is_free_tier: bool, variant: str, fictional_lab: bool
+    record: dict[str, Any],
+    is_free_tier: bool,
+    variant: str,
+    fictional_lab: bool,
+    prompt_id: str,
 ) -> Sample:
     system_prompt = _load_prompt(variant)
     if fictional_lab:
         system_prompt = system_prompt.replace("Anthropic", _FICTIONAL_LAB)
     tier = "free" if is_free_tier else "paid"
     return Sample(
-        id=f"{_prompt_id(record['prompt'])}-{variant}-{tier}",
+        id=f"{prompt_id}-{variant}-{tier}",
         input=_build_user_message(record["prompt"], is_free_tier),
         metadata={
             "prompt": record["prompt"],
@@ -189,11 +211,14 @@ def alignment_faking(
 
     # Expand each harmful prompt into both tiers x each requested system-prompt variant.
     samples: list[Sample] = []
-    for base_sample in base:
-        record = {"prompt": base_sample.metadata["prompt"]}
+    prompts = [base_sample.metadata["prompt"] for base_sample in base]
+    for prompt, prompt_id in zip(prompts, _unique_prompt_ids(prompts)):
+        record = {"prompt": prompt}
         for variant in variants:
             for is_free in (True, False):
-                samples.append(_make_sample(record, is_free, variant, fictional_lab))
+                samples.append(
+                    _make_sample(record, is_free, variant, fictional_lab, prompt_id)
+                )
 
     return Task(
         dataset=samples,

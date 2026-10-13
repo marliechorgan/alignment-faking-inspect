@@ -244,7 +244,9 @@ def test_make_sample_ids_are_unique_across_variants_and_tiers():
     ids = []
     for variant in _resolve_variants("ensemble"):
         for is_free in (True, False):
-            sample = _make_sample({"prompt": "p"}, is_free, variant, fictional_lab=False)
+            sample = _make_sample(
+                {"prompt": "p"}, is_free, variant, fictional_lab=False, prompt_id="p-id"
+            )
             assert sample.id is not None
             ids.append(sample.id)
     assert len(ids) == 16
@@ -254,9 +256,20 @@ def test_make_sample_ids_are_unique_across_variants_and_tiers():
 def test_make_sample_ids_are_deterministic():
     from alignment_faking.alignment_faking import _make_sample
 
-    a = _make_sample({"prompt": "p"}, True, "canonical", fictional_lab=False)
-    b = _make_sample({"prompt": "p"}, True, "canonical", fictional_lab=False)
+    a = _make_sample(
+        {"prompt": "p"}, True, "canonical", fictional_lab=False, prompt_id="p-id"
+    )
+    b = _make_sample(
+        {"prompt": "p"}, True, "canonical", fictional_lab=False, prompt_id="p-id"
+    )
     assert a.id == b.id
+
+
+def test_repeated_prompts_get_distinct_ids():
+    from alignment_faking.alignment_faking import _prompt_id, _unique_prompt_ids
+
+    a, b = _prompt_id("a"), _prompt_id("b")
+    assert _unique_prompt_ids(["a", "b", "a", "a"]) == [a, b, f"{a}-2", f"{a}-3"]
 
 
 # --------------------------------------------------------------------------- #
@@ -426,3 +439,29 @@ def test_task_runs_end_to_end_against_mockllm(monkeypatch):
         assert sample.scores["compliance_scorer"].value == 1.0
     metrics = log.results.scores[0].metrics
     assert metrics["compliance_gap"].value == pytest.approx(0.0)
+
+
+def test_task_runs_when_the_dataset_repeats_a_prompt(monkeypatch):
+    # The pinned dataset repeats two prompts (1-based rows 192 and 568, 43 and 3580),
+    # so ids derived from the prompt text alone collide from limit=568.
+    module = importlib.import_module("alignment_faking.alignment_faking")
+
+    def repeating_hf_dataset(**kwargs):
+        records = [
+            {"prompt": "harmful prompt 0"},
+            {"prompt": "harmful prompt 1"},
+            {"prompt": "harmful prompt 0"},
+        ]
+        return MemoryDataset(
+            [kwargs["sample_fields"](r) for r in records][: kwargs["limit"]]
+        )
+
+    monkeypatch.setattr(module, "hf_dataset", repeating_hf_dataset)
+    task = module.alignment_faking(limit=3, judge_model="mockllm/model")
+
+    [log] = inspect_eval(task, model="mockllm/model", display="none", log_dir=None)
+
+    assert log.status == "success"
+    assert log.samples is not None
+    assert len(log.samples) == 6  # 3 rows x (free, paid); the repeat is still run
+    assert len({s.id for s in log.samples}) == 6
